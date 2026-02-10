@@ -1,177 +1,59 @@
 {
-  "signoz": {
-    "url": "http://localhost:3301",
-    "api_key_env": "SIGNOZ_API_KEY",
-    "mcp_endpoint": "/api/mcp",
-    "dashboard_base_url": "http://localhost:3301/dashboard"
-  },
-  "jira": {
-    "url": "https://your-domain.atlassian.net",
-    "email": "your-email@example.com",
-    "organization_id": "<YOUR_ORG_ID>",
-    "project_key": "YOUR_KEY",
-    "default_issue_type": "Bug",
-    "default_labels": ["ops-monitor", "automated"],
-    "api_token_env": "JIRA_API_TOKEN",
-    "priority_mapping": {
-      "critical": "Highest",
-      "high": "High",
-      "medium": "Medium",
-      "low": "Low"
-    },
-    "issue_type_mapping": {
-      "critical": "Bug",
-      "high": "Bug",
-      "medium": "Bug",
-      "low": "Bug"
-    },
-    "available_issue_types": ["Bug", "Task", "Request", "Story"]
-  },
-  "discord": {
-    "server_id": "<YOUR_DISCORD_SERVER_ID>",
-    "channels": {
-      "bug_reporting": "<BUG_REPORTING_CHANNEL_ID>",
-      "day_review": "<DAY_REVIEW_CHANNEL_ID>"
-    },
-    "mentions": {
-      "oncall_role_id": "<ONCALL_ROLE_ID>",
-      "oncall_enabled": false
-    }
-  },
-  "thresholds": {
-    "error_rate_percent": 5,
-    "response_time_p95_ms": 2000,
-    "response_time_p99_ms": 5000,
-    "window_minutes": 15,
-    "alert_cooldown_minutes": 30,
-    "min_requests_for_alert": 100
-  },
-  "services": {
-    "discovery": {
-      "enabled": true,
-      "source": "signoz",
-      "refresh_interval_minutes": 5,
-      "cache_file": "memory/discovered-services.json"
-    },
-    "filters": {
-      "include": ["*"],
-      "exclude": ["otel-collector", "jaeger*", "prometheus*"]
-    },
-    "priority_rules": [
-      { "pattern": "checkout|payment", "priority": "critical", "error_rate_threshold": 3 },
-      { "pattern": "frontend|frontend-proxy", "priority": "high", "error_rate_threshold": 5 },
-      { "pattern": "product-catalog|cart|recommendation", "priority": "high", "error_rate_threshold": 5 },
-      { "pattern": "load-generator", "priority": "low", "enabled": false },
-      { "pattern": "*", "priority": "medium", "error_rate_threshold": 5 }
-    ],
-    "overrides": {
-      "checkout": {
-        "display_name": "Checkout Service",
-        "thresholds": { "error_rate_percent": 3, "response_time_p95_ms": 1500 }
-      },
-      "payment": {
-        "display_name": "Payment Service",
-        "thresholds": { "error_rate_percent": 1, "response_time_p95_ms": 1000 }
-      },
-      "frontend": { "display_name": "Frontend Web" },
-      "frontend-proxy": { "display_name": "Frontend Proxy" }
-    }
-  },
+  "$integrations": ["jira", "signoz", "discord"],
+
+  // Canonical state file path (avoid duplicates in workspace/memory/ or workspace-ops-monitor/)
+  "state_file": "memory/ops-monitor-state.json",
+
+  // Project-specific: loaded from projects/otel-demo/
+  "project": { "$include": "../../../projects/otel-demo/integrations.json5" },
+  "services": { "$include": "../../../projects/otel-demo/services.json5" },
+  "thresholds": { "$include": "../../../projects/otel-demo/thresholds.json5" },
+
+  // General: monitoring framework patterns (reusable across projects)
   "monitoring": {
     "realtime_interval_minutes": 5,
-    "daily_report_hour_kst": 23,
     "max_traces_per_alert": 5,
     "include_stack_trace": true,
     "require_trace_analysis": true,
-    "report_language": "Korean",
-    "require_action_plan": true
+    "require_action_plan": true,
+    "daily_report_time": "23:00"
   },
   "alerts": {
     "suppress_duplicates": true,
     "active_incident_tracking": true,
-    "auto_resolve_after_minutes": 60,
-    "severity_rules": [
-      {
-        "condition": "error_rate > 30 OR response_time_p95 > 10000",
-        "severity": "critical",
-        "jira_priority": "Highest",
-        "jira_issue_type": "Bug",
-        "mention_oncall": true
-      },
-      {
-        "condition": "error_rate > 10 OR response_time_p95 > 5000",
-        "severity": "high",
-        "jira_priority": "High",
-        "jira_issue_type": "Bug",
-        "mention_oncall": true
-      },
-      {
-        "condition": "error_rate > 5 OR response_time_p95 > 2000",
-        "severity": "medium",
-        "jira_priority": "Medium",
-        "jira_issue_type": "Bug",
-        "mention_oncall": false
-      },
-      {
-        "condition": "error_rate > 2 OR response_time_p95 > 1000",
-        "severity": "low",
-        "jira_priority": "Low",
-        "jira_issue_type": "Bug",
-        "mention_oncall": false
-      }
-    ]
+    "auto_resolve_after_minutes": 60
   },
   "cost_tracking": {
     "enabled": true,
-    "daily_budget_usd": 10.0,
-    "alert_at_percent": 80,
-    "track_by": ["service", "endpoint", "model"],
-    "metrics": {
-      "token_cost_per_1k": {
-        "gemini-3-flash": 0.0001,
-        "claude-sonnet": 0.003,
-        "claude-opus": 0.015
-      },
-      "api_call_cost": {
-        "signoz_query": 0.0001,
-        "jira_create": 0.0005,
-        "discord_send": 0.0001
-      }
-    }
+    "track_by": ["service", "endpoint", "model"]
   },
   "drift_detection": {
     "enabled": true,
     "baseline_window_hours": 168,
     "comparison_window_hours": 24,
     "sigma_threshold": 2.0,
-    "metrics_to_track": [
-      "error_rate", "response_time_p50", "response_time_p95",
-      "request_count", "success_rate"
-    ],
+    "metrics_to_track": ["error_rate", "response_time_p50", "response_time_p95", "request_count", "success_rate"],
     "alert_on_drift": true,
     "auto_update_baseline": false,
     "min_data_points": 50
+  },
+  "cascade_detection": {
+    "enabled": true,
+    "use_dependency_graph": true,
+    "correlation_window_minutes": 5,
+    "min_affected_services": 2,
+    "root_cause_analysis": true,
+    "group_related_alerts": true,
+    "cascade_severity_escalation": "critical"
   },
   "quality_scoring": {
     "enabled": true,
     "eval_sample_rate": 0.1,
     "scoring_model": "gemini-3-flash",
     "metrics": {
-      "accuracy": {
-        "description": "Does the response accurately reflect the actual system state?",
-        "threshold": 0.8,
-        "weight": 0.4
-      },
-      "completeness": {
-        "description": "Does it include all necessary information?",
-        "threshold": 0.7,
-        "weight": 0.3
-      },
-      "actionability": {
-        "description": "Does the alert include immediately actionable steps?",
-        "threshold": 0.8,
-        "weight": 0.3
-      }
+      "accuracy": { "description": "응답이 실제 시스템 상태를 정확히 반영하는가", "threshold": 0.8, "weight": 0.4 },
+      "completeness": { "description": "필요한 모든 정보가 포함되어 있는가", "threshold": 0.7, "weight": 0.3 },
+      "actionability": { "description": "알림이 즉시 실행 가능한 조치를 포함하는가", "threshold": 0.8, "weight": 0.3 }
     },
     "alert_on_low_quality": true,
     "quality_report_frequency": "daily"
@@ -182,31 +64,22 @@
     "max_alerts_per_hour": 10,
     "action_on_breach": "pause_and_alert",
     "auto_resume_after_minutes": 15,
-    "circuit_breaker": {
-      "enabled": true,
-      "failure_threshold": 5,
-      "reset_timeout_seconds": 300
-    },
-    "rate_limiting": {
-      "jira_issues_per_hour": 20,
-      "discord_messages_per_minute": 5
-    }
+    "circuit_breaker": { "enabled": true, "failure_threshold": 5, "reset_timeout_seconds": 300 },
+    "rate_limiting": { "jira_issues_per_hour": 20, "discord_messages_per_minute": 5 }
   },
   "feedback_loop": {
     "enabled": true,
     "track_resolution_time": true,
     "learn_from_false_positives": true,
     "auto_adjust_thresholds": false,
-    "resolution_tracking": {
-      "timeout_hours": 24,
-      "remind_after_hours": 4
-    }
+    "resolution_tracking": { "timeout_hours": 24, "remind_after_hours": 4 }
   },
-  "integrations": {
-    "jira_skill": {
-      "enabled": true,
-      "skill_dir": "./skills/jira-control",
-      "scripts_dir": "./skills/jira-control/scripts"
-    }
+  "jira_behavior": {
+    "default_labels": ["ops-monitor", "automated"],
+    "issue_type_mapping": { "critical": "버그", "high": "버그", "medium": "버그", "low": "버그" }
+  },
+  "discord_behavior": {
+    "channels": { "realtime_alerts": "bug_reporting", "daily_reports": "day_review" },
+    "mentions": { "oncall_enabled": false }
   }
 }

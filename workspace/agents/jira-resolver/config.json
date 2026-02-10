@@ -1,142 +1,58 @@
 {
-  "jira": {
-    "url": "https://your-domain.atlassian.net",
-    "email": "your-email@example.com",
-    "organization_id": "<YOUR_ORG_ID>",
-    "project_key": "YOUR_KEY",
-    "api_token_env": "JIRA_API_TOKEN",
-    "filters": {
-      "jql_base": "project=YOUR_KEY AND statusCategory != Done",
-      "priority": ["Highest", "High", "Medium", "Low"]
-    },
-    "transitions": {
-      "to_do": { "id": 11, "name": "To Do" },
-      "in_progress": { "id": 21, "name": "In Progress" },
-      "in_review": { "id": 31, "name": "In Review" },
-      "done": { "id": 41, "name": "Done" }
-    },
+  "$integrations": ["jira", "signoz", "discord", "docker"],
+
+  // Canonical state file path (avoid duplicates in workspace-jira-resolver/)
+  "state_file": "memory/jira-resolver-state.json",
+
+  // Project-specific: loaded from projects/otel-demo/
+  "project": { "$include": "../../../projects/otel-demo/integrations.json5" },
+  "services": { "$include": "../../../projects/otel-demo/services.json5" },
+  "thresholds": { "$include": "../../../projects/otel-demo/thresholds.json5" },
+
+  // General: ticket resolution framework (reusable across projects)
+  "jira_behavior": {
     "workflow": {
       "auto_progress": true,
       "auto_review": true,
       "auto_complete": true,
       "auto_reopen": true
+    },
+    "priority": ["Highest", "High", "Medium", "Low"]
+  },
+  "discord_behavior": {
+    "channels": {
+      "status_updates": "bug_reporting",
+      "daily_summary": "day_review"
     }
   },
-  "docker": {
-    "compose_project": "/path/to/your/docker-compose-project",
-    "socket_path": "/var/run/docker.sock",
-    "services": [
-      { "name": "frontend", "container_pattern": "frontend", "restart_allowed": true, "scale_allowed": false },
-      { "name": "frontend-proxy", "container_pattern": "frontend-proxy", "restart_allowed": true, "scale_allowed": false },
-      { "name": "checkout", "container_pattern": "checkoutservice", "restart_allowed": true, "scale_allowed": true },
-      { "name": "payment", "container_pattern": "paymentservice", "restart_allowed": true, "scale_allowed": true },
-      { "name": "currency", "container_pattern": "currencyservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "cart", "container_pattern": "cartservice", "restart_allowed": true, "scale_allowed": true },
-      { "name": "product-catalog", "container_pattern": "productcatalogservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "recommendation", "container_pattern": "recommendationservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "shipping", "container_pattern": "shippingservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "email", "container_pattern": "emailservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "ad", "container_pattern": "adservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "quote", "container_pattern": "quoteservice", "restart_allowed": true, "scale_allowed": false },
-      { "name": "load-generator", "container_pattern": "loadgenerator", "restart_allowed": true, "scale_allowed": false },
-      { "name": "flagd", "container_pattern": "flagd", "restart_allowed": true, "scale_allowed": false }
-    ],
-    "safe_commands": [
-      "docker ps", "docker logs", "docker stats", "docker inspect",
-      "docker exec <container> ps", "docker exec <container> netstat",
-      "docker exec <container> ping"
-    ],
-    "forbidden_commands": [
-      "docker rm", "docker rmi", "docker-compose down",
-      "docker exec <container> rm -rf"
-    ]
+  "coordination": {
+    "check_lock_file": "../../shared/stress-test.lock",
+    "action_when_locked": "skip_restart",
+    "log_when_locked": true
   },
   "actions": {
-    "restart": {
-      "enabled": true,
-      "max_retries": 3,
-      "cooldown_minutes": 5,
-      "verification_delay_seconds": 30
-    },
-    "scale": {
-      "enabled": false,
-      "max_replicas": 3,
-      "min_replicas": 1
-    },
-    "log_cleanup": {
-      "enabled": true,
-      "max_log_size_mb": 500
-    }
+    "restart": { "enabled": true, "max_retries": 3, "cooldown_minutes": 5, "verification_delay_seconds": 30 },
+    "scale": { "enabled": false, "max_replicas": 3, "min_replicas": 1 },
+    "log_cleanup": { "enabled": true, "max_log_size_mb": 500 }
+  },
+  "docker": {
+    "safe_commands": ["docker ps", "docker logs", "docker stats", "docker inspect", "docker exec <container> ps", "docker exec <container> netstat", "docker exec <container> ping"],
+    "forbidden_commands": ["docker rm", "docker rmi", "docker-compose down", "docker exec <container> rm -rf"]
   },
   "verification": {
     "enabled": true,
     "wait_minutes": 5,
     "check_signoz_metrics": true,
-    "thresholds": {
-      "error_rate_below": 1.0,
-      "response_time_p95_below": 1000,
-      "container_uptime_minutes": 5
-    },
-    "retry_on_failure": {
-      "enabled": true,
-      "max_retries": 3,
-      "backoff_minutes": 5,
-      "escalate_priority_on_max_retry": true
-    }
-  },
-  "thresholds": {
-    "auto_resolve_conditions": {
-      "container_running": true,
-      "error_rate_below": 1.0,
-      "response_time_p95_below": 1000
-    },
-    "manual_intervention_conditions": {
-      "consecutive_restart_failures": 3,
-      "high_error_rate_after_restart": 5.0,
-      "code_level_error": true
-    }
-  },
-  "discord": {
-    "server_id": "<YOUR_DISCORD_SERVER_ID>",
-    "channels": {
-      "bug_reporting": "<BUG_REPORTING_CHANNEL_ID>",
-      "day_review": "<DAY_REVIEW_CHANNEL_ID>"
-    },
-    "mentions": {
-      "oncall_role_id": "",
-      "oncall_enabled": false
-    }
+    "retry_on_failure": { "enabled": true, "max_retries": 3, "backoff_minutes": 5, "escalate_priority_on_max_retry": true }
   },
   "monitoring": {
-    "check_interval_minutes": 10,
+    "check_interval_minutes": 5,
     "daily_report_enabled": true,
-    "daily_report_hour_kst": 23,
+    "daily_report_time": "23:15",
     "log_all_actions": true
   },
   "safety": {
     "require_verification": true,
-    "max_auto_actions_per_run": 5,
-    "blacklist_containers": ["signoz", "postgres", "redis"]
-  },
-  "signoz": {
-    "url": "http://localhost:3301",
-    "api_key_env": "SIGNOZ_API_KEY",
-    "dashboard_base_url": "http://localhost:3301/dashboard"
-  },
-  "service_dependencies": {
-    "frontend": ["frontend-proxy"],
-    "frontend-proxy": ["checkout", "cart", "product-catalog", "recommendation", "ad", "shipping", "currency"],
-    "checkout": ["payment", "shipping", "currency", "cart", "product-catalog", "email"],
-    "payment": ["currency"],
-    "recommendation": ["product-catalog"],
-    "cart": ["redis"]
-  },
-  "priority_processing_order": ["Highest", "High", "Medium", "Low"],
-  "integrations": {
-    "jira_skill": {
-      "enabled": true,
-      "skill_dir": "./skills/jira-control",
-      "scripts_dir": "./skills/jira-control/scripts"
-    }
+    "max_auto_actions_per_run": 5
   }
 }

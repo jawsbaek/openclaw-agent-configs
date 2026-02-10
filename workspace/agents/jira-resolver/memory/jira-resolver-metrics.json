@@ -1,0 +1,25 @@
+{
+  "total_tickets_processed": 0,
+  "by_status": {
+    "to_do_started": 0,
+    "in_progress_actioned": 0,
+    "in_review_verified": 0,
+    "completed": 0,
+    "max_retry_reached": 0
+  },
+  "outcomes": {
+    "auto_resolved": 0,
+    "manual_escalation": 0,
+    "max_retry_failed": 0
+  },
+  "success_rate": 0.0,
+  "avg_resolution_time_minutes": 0.0,
+  "avg_retries": 0.0,
+  "retry_success_rate": 0.0,
+  "avg_time_in_status_minutes": {
+    "to_do": 0.0,
+    "in_progress": 0.0,
+    "in_review": 0.0
+  },
+  "total_cycle_time_minutes": 0.0
+}

@@ -1,128 +1,19 @@
 {
-  "otel_demo": {
-    "deployment_type": "docker-compose",
-    "compose_file": "/path/to/docker-compose.yml",
-    "load_generator_service": "loadgenerator",
-    "frontend_url": "http://localhost:8080",
-    "locust_url": "http://localhost:8089",
-    "flagd": {
-      "grpc_url": "localhost:8013",
-      "http_url": "http://localhost:8016"
-    }
-  },
-  "scenarios": {
-    "normal": {
-      "name": "Normal Traffic",
-      "description": "Normal traffic (low load)",
-      "users": 5,
-      "spawn_rate": 1,
-      "duration_minutes": 10,
-      "error_rate_target": 0.01,
-      "expected_ops_monitor_response": "none"
-    },
-    "moderate": {
-      "name": "Moderate Traffic",
-      "description": "Moderate traffic (medium load)",
-      "users": 20,
-      "spawn_rate": 2,
-      "duration_minutes": 10,
-      "error_rate_target": 0.02,
-      "expected_ops_monitor_response": "none"
-    },
-    "high": {
-      "name": "High Traffic",
-      "description": "High traffic (increased load)",
-      "users": 50,
-      "spawn_rate": 5,
-      "duration_minutes": 10,
-      "error_rate_target": 0.05,
-      "expected_ops_monitor_response": "warning"
-    },
-    "stress": {
-      "name": "Stress Test",
-      "description": "Stress test (threshold exceeded)",
-      "users": 100,
-      "spawn_rate": 10,
-      "duration_minutes": 5,
-      "error_rate_target": 0.1,
-      "expected_ops_monitor_response": "critical_with_jira"
-    },
-    "spike": {
-      "name": "Traffic Spike",
-      "description": "Traffic spike (sudden burst)",
-      "users": 80,
-      "spawn_rate": 20,
-      "duration_minutes": 3,
-      "error_rate_target": 0.08,
-      "expected_ops_monitor_response": "warning"
-    },
-    "recovery": {
-      "name": "Recovery",
-      "description": "Recovery scenario (load decrease)",
-      "users": 2,
-      "spawn_rate": 1,
-      "duration_minutes": 5,
-      "error_rate_target": 0.001,
-      "expected_ops_monitor_response": "auto_resolve"
-    },
-    "flagd_normal": {
-      "name": "FlagD Normal Load",
-      "description": "FlagD normal load (10 RPS)",
-      "flagd_rps": 10,
-      "duration_minutes": 10,
-      "flag_queries": ["productCatalogFailure", "recommendationCache", "adServiceFailure"],
-      "expected_ops_monitor_response": "none"
-    },
-    "flagd_high": {
-      "name": "FlagD High Load",
-      "description": "FlagD high load (100 RPS)",
-      "flagd_rps": 100,
-      "duration_minutes": 10,
-      "flag_queries": ["productCatalogFailure", "recommendationCache", "adServiceFailure", "cartServiceFailure"],
-      "expected_ops_monitor_response": "warning"
-    },
-    "flagd_stress": {
-      "name": "FlagD Stress Test",
-      "description": "FlagD stress test (500 RPS)",
-      "flagd_rps": 500,
-      "duration_minutes": 5,
-      "flag_queries": ["productCatalogFailure", "recommendationCache", "adServiceFailure", "cartServiceFailure", "checkoutServiceFailure"],
-      "expected_ops_monitor_response": "critical_with_jira"
-    }
-  },
-  "schedules": {
-    "daily_pattern": {
-      "enabled": true,
-      "description": "Daily load pattern (auto rotation)",
-      "sequence": [
-        { "scenario": "normal", "start_time": "00:00" },
-        { "scenario": "moderate", "start_time": "09:00" },
-        { "scenario": "high", "start_time": "12:00" },
-        { "scenario": "moderate", "start_time": "15:00" },
-        { "scenario": "normal", "start_time": "18:00" },
-        { "scenario": "recovery", "start_time": "22:00" }
-      ]
-    },
-    "stress_test": {
-      "enabled": false,
-      "description": "Stress test scenario (for ops-monitor validation)",
-      "sequence": [
-        { "scenario": "normal", "duration_minutes": 5 },
-        { "scenario": "high", "duration_minutes": 10 },
-        { "scenario": "stress", "duration_minutes": 5 },
-        { "scenario": "spike", "duration_minutes": 3 },
-        { "scenario": "recovery", "duration_minutes": 5 }
-      ]
-    }
-  },
+  "$integrations": ["docker", "discord"],
+
+  // Project-specific: loaded from projects/otel-demo/
+  "project": { "$include": "../../../projects/otel-demo/integrations.json5" },
+  "scenarios": { "$include": "../../../projects/otel-demo/scenarios.json5" },
+
+  // General: control framework patterns (reusable across projects)
   "control": {
     "method": "locust_api",
     "fallback_method": "docker_restart",
     "check_interval_seconds": 30,
     "transition_delay_seconds": 10
   },
-  "notification": {
-    "discord_channel": "<DAY_REVIEW_CHANNEL_ID>",
+  "discord_behavior": {
+    "channels": { "notifications": "day_review" },
     "notify_on_scenario_change": true
   },
   "validation": {
@@ -131,24 +22,11 @@
     "verification_timeout_seconds": 300,
     "polling_interval_seconds": 30,
     "success_criteria": {
-      "discord_alert_received": {
-        "required_for": ["high", "stress", "spike", "flagd_high", "flagd_stress"],
-        "timeout_seconds": 180
-      },
-      "jira_issue_created": {
-        "required_for": ["stress", "flagd_stress"],
-        "timeout_seconds": 300
-      },
-      "auto_resolve_triggered": {
-        "required_for": ["recovery"],
-        "timeout_seconds": 3600
-      }
+      "discord_alert_received": { "required_for": ["high", "stress", "spike", "flagd_high", "flagd_stress"], "timeout_seconds": 180 },
+      "jira_issue_created": { "required_for": ["stress", "flagd_stress"], "timeout_seconds": 300 },
+      "auto_resolve_triggered": { "required_for": ["recovery"], "timeout_seconds": 3600 }
     },
-    "failure_actions": {
-      "log_to_file": true,
-      "alert_to_discord": true,
-      "retry_count": 1
-    }
+    "failure_actions": { "log_to_file": true, "alert_to_discord": true, "retry_count": 1 }
   },
   "reporting": {
     "enabled": true,
@@ -157,31 +35,19 @@
     "baseline_file": "memory/scenario-baselines.json",
     "report_to_discord": true,
     "report_format": "markdown",
-    "metrics_to_capture": [
-      "actual_error_rate",
-      "actual_response_time_p95",
-      "ops_monitor_response_time",
-      "jira_creation_time",
-      "discord_notification_time"
-    ],
-    "daily_summary": {
-      "enabled": true,
-      "time_kst": "23:30",
-      "channel": "<DAY_REVIEW_CHANNEL_ID>"
-    }
+    "metrics_to_capture": ["actual_error_rate", "actual_response_time_p95", "ops_monitor_response_time", "jira_creation_time", "discord_notification_time"],
+    "daily_summary": { "enabled": true, "time_kst": "23:30", "channel": "day_review" }
   },
   "coordination": {
     "enabled": true,
     "notify_ops_monitor_on_change": true,
-    "event_types": {
-      "scenario_started": true,
-      "scenario_ended": true,
-      "stress_test_begin": true,
-      "stress_test_end": true
-    },
-    "handoff_protocol": {
-      "pre_scenario_delay_seconds": 5,
-      "post_scenario_wait_seconds": 30
+    "event_types": { "scenario_started": true, "scenario_ended": true, "stress_test_begin": true, "stress_test_end": true },
+    "handoff_protocol": { "pre_scenario_delay_seconds": 5, "post_scenario_wait_seconds": 30 },
+    "lock_file": {
+      "path": "../../shared/stress-test.lock",
+      "create_on": ["stress", "spike", "flagd_stress"],
+      "remove_on_scenario_end": true,
+      "max_lock_duration_minutes": 30
     }
   },
   "learning": {
@@ -190,12 +56,5 @@
     "track_missed_alerts": true,
     "adjust_thresholds_suggestion": true,
     "history_retention_days": 30
-  },
-  "integrations": {
-    "jira_skill": {
-      "enabled": true,
-      "skill_dir": "./skills/jira-control",
-      "scripts_dir": "./skills/jira-control/scripts"
-    }
   }
 }
