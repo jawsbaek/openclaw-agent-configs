@@ -1,7 +1,7 @@
 {
   "meta": {
     "lastTouchedVersion": "2026.2.9",
-    "lastTouchedAt": "2026-02-10T14:09:45.206Z"
+    "lastTouchedAt": "2026-02-10T22:59:35.031Z"
   },
   "env": {
     "shellEnv": {
@@ -9,7 +9,7 @@
     }
   },
   "wizard": {
-    "lastRunAt": "2026-02-10T14:09:45.192Z",
+    "lastRunAt": "2026-02-10T22:59:35.023Z",
     "lastRunVersion": "2026.2.9",
     "lastRunCommand": "doctor",
     "lastRunMode": "local"
@@ -34,10 +34,10 @@
   },
   "auth": {
     "profiles": {
-      "google-antigravity:${YOUR_EMAIL}": {
+      "google-antigravity:${JIRA_EMAIL}": {
         "provider": "google-antigravity",
         "mode": "oauth",
-        "email": "${YOUR_EMAIL}"
+        "email": "${JIRA_EMAIL}"
       },
       "anthropic:default": {
         "provider": "anthropic",
@@ -88,7 +88,7 @@
           "alias": "codex-mini"
         }
       },
-      "workspace": "${WORKSPACE_PATH}",
+      "workspace": "/Users/User/.openclaw/workspace",
       "contextPruning": {
         "mode": "cache-ttl",
         "ttl": "6h",
@@ -108,13 +108,13 @@
         "id": "main",
         "default": true,
         "name": "Main",
-        "workspace": "${WORKSPACE_PATH}/workspace-main"
+        "workspace": "/Users/User/.openclaw/workspace-main"
       },
       {
         "id": "ops-monitor",
         "default": false,
         "name": "Ops Monitor",
-        "agentDir": "${WORKSPACE_PATH}/workspace/agents/ops-monitor",
+        "agentDir": "/Users/User/.openclaw/workspace/agents/ops-monitor",
         "model": {
           "primary": "google-antigravity/gemini-3-flash",
           "fallbacks": [
@@ -128,7 +128,7 @@
         "id": "demo-controller",
         "default": false,
         "name": "Demo Controller",
-        "agentDir": "${WORKSPACE_PATH}/workspace/agents/demo-controller",
+        "agentDir": "/Users/User/.openclaw/workspace/agents/demo-controller",
         "model": {
           "primary": "flash",
           "fallbacks": [
@@ -142,7 +142,7 @@
         "id": "jira-resolver",
         "default": false,
         "name": "Jira Ticket Resolver",
-        "agentDir": "${WORKSPACE_PATH}/workspace/agents/jira-resolver",
+        "agentDir": "/Users/User/.openclaw/workspace/agents/jira-resolver",
         "model": {
           "primary": "sonnet",
           "fallbacks": [
@@ -156,7 +156,7 @@
         "id": "success-researcher",
         "default": false,
         "name": "Success Insight Researcher",
-        "agentDir": "${WORKSPACE_PATH}/workspace/agents/success-researcher",
+        "agentDir": "/Users/User/.openclaw/workspace/agents/success-researcher",
         "model": {
           "primary": "google-antigravity/gemini-3-flash",
           "fallbacks": [
@@ -184,42 +184,42 @@
       "agentId": "ops-monitor",
       "match": {
         "channel": "discord",
-        "guildId": "${DISCORD_SERVER_ID_1}"
+        "guildId": "1470579816985133160"
       }
     },
     {
       "agentId": "ops-monitor",
       "match": {
         "channel": "discord",
-        "guildId": "${DISCORD_SERVER_ID_2}"
+        "guildId": "1466788485481627886"
       }
     },
     {
       "agentId": "demo-controller",
       "match": {
         "channel": "discord",
-        "guildId": "${DISCORD_SERVER_ID_1}"
+        "guildId": "1470579816985133160"
       }
     },
     {
       "agentId": "demo-controller",
       "match": {
         "channel": "discord",
-        "guildId": "${DISCORD_SERVER_ID_2}"
+        "guildId": "1466788485481627886"
       }
     },
     {
       "agentId": "jira-resolver",
       "match": {
         "channel": "discord",
-        "guildId": "${DISCORD_SERVER_ID_1}"
+        "guildId": "1470579816985133160"
       }
     },
     {
       "agentId": "jira-resolver",
       "match": {
         "channel": "discord",
-        "guildId": "${DISCORD_SERVER_ID_2}"
+        "guildId": "1466788485481627886"
       }
     }
   ],
@@ -241,11 +241,6 @@
   "session": {
     "scope": "per-sender",
     "dmScope": "per-channel-peer",
-    "maintenance": {
-      "pruneAfter": "30d",
-      "maxEntries": 500,
-      "mode": "warn"
-    },
     "reset": {
       "mode": "daily",
       "atHour": 4
@@ -282,7 +277,7 @@
       "cliPath": "imsg",
       "dmPolicy": "pairing",
       "groupAllowFrom": [
-        "${PHONE_NUMBER}"
+        "+821026359832"
       ],
       "groupPolicy": "allowlist"
     }
