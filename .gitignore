@@ -1,0 +1,23 @@
+# Memory and state files
+memory/
+*.state.json
+*-state.json
+sessions/
+
+# Credentials
+*.secret.*
+auth-profiles.json
+gog-credentials.json
+
+# User-specific
+USER.md
+MEMORY.md
+calendar-access-policy.md
+calendar-usage-log.json
+
+# Logs
+*.jsonl
+*.log
+
+# OS files
+.DS_Store
