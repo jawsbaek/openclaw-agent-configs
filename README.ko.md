@@ -26,6 +26,28 @@ OpenClaw는 인프라 모니터링, 장애 대응, 부하 테스트를 위한 �
      +-------------+  +-------------+  +--------------+
 ```
 
+## 설정 분리 구조
+
+OpenClaw의 네이티브 `$include` 지시자와 `${VAR}` 환경변수 치환을 활용하여 **범용 에이전트 프레임워크**와 **프로젝트별 설정**을 분리합니다.
+
+### 범용 (재사용 가능)
+- `workspace/` — 에이전트 페르소나(SOUL.md), 행동 규칙(AGENTS.md), 워크플로우 패턴, 가드레일, 드리프트 감지, 품질 평가
+- 에이전트 `config.json`에는 프로젝트에 관계없이 동작하는 프레임워크 수준 설정만 포함
+
+### 프로젝트별 (오버라이드)
+- `projects/otel-demo/` — 연결 정보(SigNoz, Jira, Discord), 서비스 정의, 임계값 튜닝, 부하 테스트 시나리오
+- `.env` — 시크릿(API 토큰, 봇 토큰)은 `${VAR}` 치환으로 참조
+- `config/` — 배포 환경별 채널 바인딩 및 라우팅 규칙
+
+### 새 프로젝트 추가 방법
+1. `projects/<새 프로젝트>/` 디렉토리에 4개 파일 생성:
+   - `integrations.json5` — 관측 플랫폼, 티켓 시스템, 알림 채널 연결 정보
+   - `services.json5` — 서비스 목록 및 의존성 그래프
+   - `thresholds.json5` — 환경에 맞는 감지 임계값
+   - `scenarios.json5` — 부하 테스트 시나리오 (Demo Controller 사용 시)
+2. 에이전트 `config.json`의 `$include` 경로를 새 프로젝트로 변경
+3. `.env`에 시크릿 추가
+
 ## 에이전트 계층 구조
 
 ### Atlas (메인 에이전트)
@@ -283,13 +305,16 @@ Jira Cloud REST API 핵심 통합. 셸 스크립트 제공:
 ### 핵심 설정 (`openclaw.json`)
 - **모델 라우팅**: 기본 모델 (Gemini Flash) + 폴백 (Sonnet, Codex, Haiku)
 - **에이전트 정의**: ID, 이름, 디렉토리, 모델 선호도
-- **채널 바인딩**: 에이전트를 특정 Discord 서버에 연결
+- **채널 바인딩**: 에이전트를 특정 Discord 서버에 연결 (`config/`에서 `$include` 사용)
 - **세션 관리**: 채널별 DM 범위, 매일 04:00 리셋
 - **메시지 처리**: 2초 디바운스, 수집 모드 (최대 20건)
 - **하트비트**: 가장 저렴한 모델(Flash)로 실행
 
 ### 에이전트 설정 (`config.json`)
 각 에이전트별 고유 설정:
+- 프레임워크 수준 설정 (페르소나, 행동 규칙, 워크플로우 패턴)
+- 프로젝트별 설정은 `projects/<프로젝트명>/`에서 `$include`로 로드
+- 환경변수는 `${VAR}` 치환으로 참조 (예: `${JIRA_API_TOKEN}`)
 - 통합 설정 (SigNoz, Jira, Discord)
 - 임계값 및 감지 규칙
 - 서비스 정의 및 오버라이드
@@ -369,21 +394,22 @@ Jira Cloud REST API 핵심 통합. 셸 스크립트 제공:
 - Discord 서버 + 봇
 
 ### 환경 변수
+`.env.example`을 `.env`로 복사하고 시크릿을 입력하세요:
 ```bash
-export JIRA_SITE="your-domain.atlassian.net"
-export JIRA_EMAIL="your-email@example.com"
-export JIRA_API_TOKEN="your-token"
-export JIRA_PROJECT_KEY="YOUR_KEY"
-export SIGNOZ_API_KEY="your-signoz-key"
+cp .env.example .env
+# .env 파일을 실제 자격 증명으로 수정
 ```
+
+**중요**: 모든 시크릿은 `.env` 파일로 관리되며, 설정 파일에서 `${VAR}` 구문으로 참조됩니다. 시크릿을 설정 파일에 직접 커밋하지 마세요.
 
 ### 빠른 시작
 1. 이 리포지토리를 클론
-2. 에이전트 설정을 OpenClaw 워크스페이스에 복사
-3. `openclaw.json`에 자격 증명 업데이트
-4. Discord 채널 및 Jira 프로젝트 설정
-5. OpenTelemetry Demo 시작
-6. 각 에이전트의 크론잡 등록
+2. `.env.example`을 `.env`로 복사하고 자격 증명 입력
+3. 에이전트 설정을 OpenClaw 워크스페이스에 복사
+4. `config/channels.json5`에서 Discord 채널 설정
+5. `projects/otel-demo/`에서 프로젝트별 설정 업데이트
+6. OpenTelemetry Demo 시작
+7. 각 에이전트의 크론잡 등록
 
 ---
 
@@ -391,15 +417,27 @@ export SIGNOZ_API_KEY="your-signoz-key"
 
 ```
 openclaw-agent-configs/
-├── README.md                              # 영어 버전
-├── README.ko.md                           # 이 파일 (한국어)
-├── openclaw.json                          # 메인 설정 (sanitized)
-├── workspace/
+├── .env.example                           # 환경 변수 템플릿
+├── .gitignore                             # Git 무시 규칙
+├── openclaw.json                          # 메인 설정 ($include 사용)
+├── README.md                              # 영어 문서
+├── README.ko.md                           # 한국어 문서
+├── config/                                # ── 모듈화된 설정 (openclaw.json에서 참조) ──
+│   ├── agents.json5                       # 에이전트 정의 & 모델 라우팅
+│   ├── channels.json5                     # Discord/iMessage 채널 설정
+│   └── bindings.json5                     # 에이전트-채널 라우팅 규칙
+├── projects/                              # ── 프로젝트별 오버라이드 ──
+│   └── otel-demo/                         # 현재 프로젝트 (OTel Demo)
+│       ├── integrations.json5             # SigNoz, Jira, Discord 연결 정보
+│       ├── services.json5                 # 14개 서비스 + 의존성 그래프
+│       ├── thresholds.json5               # 에이전트별 임계값 튜닝
+│       └── scenarios.json5                # Demo Controller 부하 시나리오
+├── workspace/                             # ── 범용 에이전트 프레임워크 ──
 │   ├── AGENTS.md                          # 메인 에이전트 행동 규칙
 │   ├── SOUL.md                            # 메인 에이전트 페르소나
-│   ├── TOOLS.md                           # 로컬 도구 노트 템플릿
+│   ├── TOOLS.md                           # 로컬 도구 노트
 │   ├── IDENTITY.md                        # 에이전트 정체성
-│   ├── HEARTBEAT.md                       # 순환 하트비트 시스템
+│   ├── HEARTBEAT.md                       # 하트비트 시스템
 │   ├── WORKSPACE.md                       # 워크스페이스 구조 가이드
 │   └── agents/
 │       ├── ops-monitor/
@@ -407,31 +445,19 @@ openclaw-agent-configs/
 │       │   ├── AGENTS.md                  # 세션 규칙
 │       │   ├── SOUL.md                    # 페르소나
 │       │   ├── README.md                  # 설정 가이드
-│       │   └── config.json               # 설정 (sanitized)
+│       │   └── config.json                # 설정 ($include → projects/)
 │       ├── demo-controller/
-│       │   ├── AGENT.md                   # 전체 에이전트 정의
-│       │   ├── AGENTS.md                  # 세션 규칙
-│       │   ├── SOUL.md                    # 페르소나
-│       │   ├── README.md                  # 설정 가이드
-│       │   └── config.json               # 설정 (sanitized)
+│       │   ├── AGENT.md / AGENTS.md / SOUL.md / README.md
+│       │   └── config.json                # 설정 ($include → projects/)
 │       └── jira-resolver/
-│           ├── AGENTS.md                  # 전체 에이전트 정의 + 워크플로우
-│           ├── SOUL.md                    # 페르소나
-│           └── config.json               # 설정 (sanitized)
-├── workspace-jira-resolver/
-│   ├── AGENTS.md                          # Jira resolver 워크스페이스 규칙
-│   ├── SOUL.md                            # 페르소나
-│   └── CRON_PROMPTS.md                    # 크론잡 프롬프트 템플릿
-├── workspace-ops/
-│   ├── AGENTS.md                          # Ops 워크스페이스 규칙
-│   └── SOUL.md                            # Ops 페르소나
-└── skills/
+│           ├── AGENTS.md / SOUL.md
+│           └── config.json                # 설정 ($include → projects/)
+├── workspace-jira-resolver/               # Jira resolver 워크스페이스
+├── workspace-ops/                         # Ops 워크스페이스
+└── skills/                                # 공유 도구
     ├── github-trending/
-    │   └── SKILL.md                       # GitHub 트렌딩 탐색
     ├── jira-control/
-    │   └── SKILL.md                       # Jira API 통합
     └── jira-resolver/
-        └── README.md                      # 자동 장애 대응 스크립트
 ```
 
 ---

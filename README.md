@@ -26,6 +26,28 @@ OpenClaw is a multi-agent orchestration system that runs autonomous AI agents fo
      +-------------+  +-------------+  +--------------+
 ```
 
+## Configuration Separation
+
+The configuration follows a clear separation between **general agent framework** and **project-specific settings**, using OpenClaw's native `$include` directive and `${VAR}` environment variable substitution.
+
+### General (Reusable)
+- `workspace/` — Agent personas (SOUL.md), behavioral rules (AGENTS.md), workflow patterns, guardrails, drift detection, quality scoring
+- Agent `config.json` files contain framework-level settings that work across any project
+
+### Project-Specific (Override)
+- `projects/otel-demo/` — Connection info (SigNoz, Jira, Discord), service definitions, threshold tuning, load test scenarios
+- `.env` — Secrets (API tokens, bot tokens) referenced via `${VAR}` substitution
+- `config/` — Channel bindings and routing rules specific to the deployment
+
+### Adding a New Project
+1. Create `projects/<new-project>/` with 4 files:
+   - `integrations.json5` — Observability, ticket system, notification connections
+   - `services.json5` — Service list and dependency graph
+   - `thresholds.json5` — Detection thresholds tuned for the environment
+   - `scenarios.json5` — Load test scenarios (if using Demo Controller)
+2. Update `$include` paths in agent `config.json` files
+3. Add secrets to `.env`
+
 ## Agent Hierarchy
 
 ### Atlas (Main Agent)
@@ -283,13 +305,16 @@ The system supports multiple workspace configurations optimized for different ro
 ### Core Config (`openclaw.json`)
 - **Model routing**: Primary model (Gemini Flash) with fallbacks (Sonnet, Codex, Haiku)
 - **Agent definitions**: ID, name, directory, model preferences
-- **Channel bindings**: Agents bound to specific Discord guilds
+- **Channel bindings**: Agents bound to specific Discord guilds (using `$include` from `config/`)
 - **Session management**: Per-channel DM scope, daily reset at 04:00
 - **Message handling**: 2-second debounce, collect mode (cap: 20)
 - **Heartbeat**: Runs on cheapest model (Flash)
 
 ### Agent Configs (`config.json`)
 Each agent has its own config with:
+- Framework-level settings (personas, behavioral rules, workflow patterns)
+- Project-specific settings loaded via `$include` from `projects/<project-name>/`
+- Environment variables referenced via `${VAR}` substitution (e.g., `${JIRA_API_TOKEN}`)
 - Integration settings (SigNoz, Jira, Discord)
 - Thresholds and detection rules
 - Service definitions and overrides
@@ -369,21 +394,22 @@ Each agent has its own config with:
 - Discord server with bot
 
 ### Environment Variables
+Copy `.env.example` to `.env` and fill in your secrets:
 ```bash
-export JIRA_SITE="your-domain.atlassian.net"
-export JIRA_EMAIL="your-email@example.com"
-export JIRA_API_TOKEN="your-token"
-export JIRA_PROJECT_KEY="YOUR_KEY"
-export SIGNOZ_API_KEY="your-signoz-key"
+cp .env.example .env
+# Edit .env with your actual credentials
 ```
+
+**Important**: All secrets are managed via the `.env` file and referenced in configs using `${VAR}` syntax. Never commit secrets directly to config files.
 
 ### Quick Start
 1. Clone this repository
-2. Copy agent configs to your OpenClaw workspace
-3. Update `openclaw.json` with your credentials
-4. Configure Discord channels and Jira project
-5. Start OpenTelemetry Demo
-6. Register cron jobs for each agent
+2. Copy `.env.example` to `.env` and fill in your credentials
+3. Copy agent configs to your OpenClaw workspace
+4. Configure Discord channels in `config/channels.json5`
+5. Update project-specific settings in `projects/otel-demo/`
+6. Start OpenTelemetry Demo
+7. Register cron jobs for each agent
 
 ---
 
@@ -391,15 +417,27 @@ export SIGNOZ_API_KEY="your-signoz-key"
 
 ```
 openclaw-agent-configs/
-├── README.md                              # This file (English)
-├── README.ko.md                           # Korean version
-├── openclaw.json                          # Main config (sanitized)
-├── workspace/
+├── .env.example                           # Environment variable template
+├── .gitignore                             # Git ignore rules
+├── openclaw.json                          # Main config (uses $include)
+├── README.md                              # English documentation
+├── README.ko.md                           # Korean documentation
+├── config/                                # ── Modular config (from openclaw.json) ──
+│   ├── agents.json5                       # Agent definitions & model routing
+│   ├── channels.json5                     # Discord/iMessage channel settings
+│   └── bindings.json5                     # Agent-channel routing rules
+├── projects/                              # ── Project-specific overrides ──
+│   └── otel-demo/                         # Current project (OTel Demo)
+│       ├── integrations.json5             # SigNoz, Jira, Discord connections
+│       ├── services.json5                 # 14 services + dependency graph
+│       ├── thresholds.json5               # Threshold tuning per agent
+│       └── scenarios.json5                # Demo Controller load scenarios
+├── workspace/                             # ── General agent framework ──
 │   ├── AGENTS.md                          # Main agent behavioral rules
 │   ├── SOUL.md                            # Main agent persona
-│   ├── TOOLS.md                           # Local tool notes template
+│   ├── TOOLS.md                           # Local tool notes
 │   ├── IDENTITY.md                        # Agent identity
-│   ├── HEARTBEAT.md                       # Rotating heartbeat system
+│   ├── HEARTBEAT.md                       # Heartbeat system
 │   ├── WORKSPACE.md                       # Workspace structure guide
 │   └── agents/
 │       ├── ops-monitor/
@@ -407,31 +445,19 @@ openclaw-agent-configs/
 │       │   ├── AGENTS.md                  # Session rules
 │       │   ├── SOUL.md                    # Persona
 │       │   ├── README.md                  # Setup guide
-│       │   └── config.json               # Configuration (sanitized)
+│       │   └── config.json                # Config ($include → projects/)
 │       ├── demo-controller/
-│       │   ├── AGENT.md                   # Full agent definition
-│       │   ├── AGENTS.md                  # Session rules
-│       │   ├── SOUL.md                    # Persona
-│       │   ├── README.md                  # Setup guide
-│       │   └── config.json               # Configuration (sanitized)
+│       │   ├── AGENT.md / AGENTS.md / SOUL.md / README.md
+│       │   └── config.json                # Config ($include → projects/)
 │       └── jira-resolver/
-│           ├── AGENTS.md                  # Full agent definition + workflow
-│           ├── SOUL.md                    # Persona
-│           └── config.json               # Configuration (sanitized)
-├── workspace-jira-resolver/
-│   ├── AGENTS.md                          # Jira resolver workspace rules
-│   ├── SOUL.md                            # Persona
-│   └── CRON_PROMPTS.md                    # Cron job prompt templates
-├── workspace-ops/
-│   ├── AGENTS.md                          # Ops workspace rules
-│   └── SOUL.md                            # Ops persona
-└── skills/
+│           ├── AGENTS.md / SOUL.md
+│           └── config.json                # Config ($include → projects/)
+├── workspace-jira-resolver/               # Jira resolver workspace
+├── workspace-ops/                         # Ops workspace
+└── skills/                                # Shared tools
     ├── github-trending/
-    │   └── SKILL.md                       # GitHub trending discovery
     ├── jira-control/
-    │   └── SKILL.md                       # Jira API integration
     └── jira-resolver/
-        └── README.md                      # Auto-remediation scripts
 ```
 
 ---
