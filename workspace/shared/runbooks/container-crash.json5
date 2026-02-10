@@ -1,0 +1,29 @@
+// Runbook: Container Crash / OOM / Restart Loop
+{
+  "id": "container-crash",
+  "name": "Container Crash Recovery",
+  "trigger": {
+    "patterns": ["OOMKilled", "CrashLoopBackOff", "container exited", "restart count exceeded"],
+    "error_rate_threshold": 10.0
+  },
+  "diagnosis": [
+    "Check container logs: docker logs --tail 50 {container}",
+    "Check resource usage: docker stats {container} --no-stream",
+    "Check restart count: docker inspect {container} --format '{{.RestartCount}}'"
+  ],
+  "remediation": [
+    { "step": 1, "action": "restart_container", "command": "docker restart {container}", "timeout_seconds": 60 },
+    { "step": 2, "action": "verify_health", "wait_seconds": 30, "check": "docker ps --filter name={container} --format '{{.Status}}'" },
+    { "step": 3, "action": "check_metrics", "wait_minutes": 5, "check_signoz": true }
+  ],
+  "escalation": {
+    "max_retries": 3,
+    "on_failure": "escalate_to_oncall",
+    "jira_priority": "High"
+  },
+  "verification": {
+    "error_rate_must_decrease": true,
+    "response_time_must_normalize": true,
+    "timeout_minutes": 10
+  }
+}

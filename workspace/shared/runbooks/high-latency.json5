@@ -1,0 +1,24 @@
+// Runbook: High Latency / Slow Response
+{
+  "id": "high-latency",
+  "name": "High Latency Response",
+  "trigger": {
+    "patterns": ["p95 latency", "p99 latency", "timeout", "slow response"],
+    "latency_p99_threshold_ms": 5000
+  },
+  "diagnosis": [
+    "Check SigNoz slow traces for affected service",
+    "Identify bottleneck span in trace waterfall",
+    "Check resource utilization (CPU, memory, connections)"
+  ],
+  "remediation": [
+    { "step": 1, "action": "analyze_slow_traces", "check_signoz": true },
+    { "step": 2, "action": "check_resources", "command": "docker stats {container} --no-stream" },
+    { "step": 3, "action": "restart_if_resource_issue", "condition": "high_cpu_or_memory" }
+  ],
+  "escalation": {
+    "max_retries": 2,
+    "on_failure": "escalate_to_oncall",
+    "jira_priority": "High"
+  }
+}

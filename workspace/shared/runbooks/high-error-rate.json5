@@ -1,0 +1,24 @@
+// Runbook: High Error Rate
+{
+  "id": "high-error-rate",
+  "name": "High Error Rate Response",
+  "trigger": {
+    "patterns": ["error rate", "5xx", "status_code >= 500"],
+    "error_rate_threshold": 5.0
+  },
+  "diagnosis": [
+    "Check SigNoz error traces for affected service",
+    "Identify upstream/downstream dependencies",
+    "Check if related to recent deployment or config change"
+  ],
+  "remediation": [
+    { "step": 1, "action": "analyze_traces", "check_signoz": true, "max_traces": 5 },
+    { "step": 2, "action": "check_dependencies", "use_dependency_graph": true },
+    { "step": 3, "action": "restart_if_needed", "condition": "no_code_level_error", "command": "docker restart {container}" }
+  ],
+  "escalation": {
+    "max_retries": 2,
+    "on_failure": "escalate_to_oncall",
+    "jira_priority": "Critical"
+  }
+}

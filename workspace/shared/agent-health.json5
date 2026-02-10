@@ -1,0 +1,34 @@
+// Agent Health Check Configuration
+// Meta-monitoring: "who watches the watchmen"
+{
+  "enabled": true,
+  "check_interval_minutes": 10,
+  "agents": {
+    "ops-monitor": {
+      "state_file": "../agents/ops-monitor/memory/ops-monitor-state.json",
+      "max_stale_minutes": 15,
+      "check_field": "last_check_at"
+    },
+    "jira-resolver": {
+      "state_file": "../agents/jira-resolver/memory/jira-resolver-state.json",
+      "max_stale_minutes": 15,
+      "check_field": "last_updated"
+    },
+    "demo-controller": {
+      "state_file": "../agents/demo-controller/memory/demo-controller-state.json",
+      "max_stale_minutes": 60,
+      "check_field": "last_run"
+    }
+  },
+  "alert": {
+    "channel": "discord",
+    "target": "bug_reporting",
+    "severity": "critical",
+    "message_template": "🔴 Agent {agent_id} has not updated its state in {minutes} minutes (threshold: {max_stale_minutes}min). Last update: {last_update}"
+  },
+  "recovery": {
+    "auto_restart_agent": false,
+    "notify_on_recovery": true,
+    "recovery_message_template": "🟢 Agent {agent_id} is healthy again. Resumed at {timestamp}"
+  }
+}

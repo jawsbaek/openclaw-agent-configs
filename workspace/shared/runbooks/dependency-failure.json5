@@ -1,0 +1,25 @@
+// Runbook: Dependency / Connection Failure
+{
+  "id": "dependency-failure",
+  "name": "Dependency Connection Failure",
+  "trigger": {
+    "patterns": ["connection refused", "ECONNREFUSED", "timeout", "upstream connect error", "EventStream"],
+    "cascading": true
+  },
+  "diagnosis": [
+    "Identify root service using dependency graph",
+    "Check if root service container is running",
+    "Check network connectivity between services"
+  ],
+  "remediation": [
+    { "step": 1, "action": "identify_root_cause", "use_dependency_graph": true },
+    { "step": 2, "action": "restart_root_service", "command": "docker restart {root_container}" },
+    { "step": 3, "action": "wait_for_propagation", "wait_minutes": 2 },
+    { "step": 4, "action": "verify_all_dependents", "check_signoz": true }
+  ],
+  "escalation": {
+    "max_retries": 2,
+    "on_failure": "escalate_to_oncall",
+    "jira_priority": "Critical"
+  }
+}

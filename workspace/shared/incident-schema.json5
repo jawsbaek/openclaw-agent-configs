@@ -1,0 +1,31 @@
+// Shared Incident Ledger Schema
+// All agents append events to ../incidents.jsonl using this format
+{
+  // Event fields
+  "id": "string - UUID v4",
+  "incident_id": "string - INC-YYYYMMDD-NNN format",
+  "timestamp": "string - ISO 8601 with timezone",
+  "agent_id": "string - ops-monitor | jira-resolver | demo-controller",
+  "phase": "string - detected | triaged | actioned | verified | resolved | escalated | reopened",
+  "severity": "string - critical | high | medium | low | info",
+
+  // References
+  "jira_key": "string | null - e.g. KAN-123",
+  "discord_message_id": "string | null",
+  "trace_ids": ["array of SigNoz trace IDs"],
+
+  // Details
+  "summary": "string - human readable summary",
+  "affected_services": ["array of service names"],
+  "metrics": {
+    "error_rate_percent": "number | null",
+    "response_time_p95_ms": "number | null",
+    "response_time_p99_ms": "number | null"
+  },
+  "action_taken": "string | null - e.g. restart_container, create_jira, send_alert",
+  "action_result": "string | null - success | failed | skipped",
+
+  // Resolution tracking
+  "resolution": "string | null",
+  "mttr_minutes": "number | null - calculated on resolved phase"
+}
