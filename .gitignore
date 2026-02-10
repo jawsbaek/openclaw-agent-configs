@@ -5,6 +5,7 @@ memory/
 sessions/
 
 # Credentials
+.env
 *.secret.*
 auth-profiles.json
 gog-credentials.json

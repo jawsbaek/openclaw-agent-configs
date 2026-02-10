@@ -4,11 +4,7 @@
     "lastTouchedAt": "2026-02-10T05:37:54.704Z"
   },
   "env": {
-    "JIRA_SITE": "your-domain.atlassian.net",
-    "JIRA_EMAIL": "your-email@example.com",
-    "JIRA_API_TOKEN": "<YOUR_JIRA_API_TOKEN>",
-    "JIRA_PROJECT_KEY": "YOUR_KEY",
-    "SIGNOZ_API_KEY": "<YOUR_SIGNOZ_API_KEY>"
+    "shellEnv": { "enabled": true }
   },
   "wizard": {
     "lastRunAt": "2026-02-10T05:13:48.093Z",
@@ -35,10 +31,10 @@
   },
   "auth": {
     "profiles": {
-      "google-antigravity:default": {
+      "google-antigravity:your-email@example.com": {
         "provider": "google-antigravity",
         "mode": "oauth",
-        "email": "your-email@example.com"
+        "email": "${JIRA_EMAIL}"
       },
       "anthropic:default": {
         "provider": "anthropic",
@@ -50,106 +46,19 @@
       }
     }
   },
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "google-antigravity/gemini-3-flash",
-        "fallbacks": [
-          "openai-codex/gpt-5.3-codex"
-        ]
-      },
-      "imageModel": {
-        "primary": "google-antigravity/gemini-3-pro-image",
-        "fallbacks": []
-      },
-      "models": {
-        "anthropic/claude-opus-4-5": { "alias": "opus45" },
-        "anthropic/claude-sonnet-4-5": { "alias": "sonnet" },
-        "anthropic/claude-opus-4-6": { "alias": "opus" },
-        "openai-codex/gpt-5.3-codex": { "alias": "codex" },
-        "anthropic/claude-3-5-haiku": { "alias": "haiku" },
-        "google-antigravity/gemini-3-flash": { "alias": "flash" },
-        "google-antigravity/gemini-3-pro-image": { "alias": "gemini-image" },
-        "openai-codex/gpt-5.3-mini": { "alias": "codex-mini" }
-      },
-      "workspace": "./workspace",
-      "contextPruning": {
-        "mode": "cache-ttl",
-        "ttl": "6h",
-        "keepLastAssistants": 3
-      },
-      "timeoutSeconds": 600,
-      "heartbeat": {
-        "model": "flash"
-      },
-      "maxConcurrent": 4,
-      "subagents": {
-        "maxConcurrent": 8
-      }
-    },
-    "list": [
-      {
-        "id": "ops-monitor",
-        "default": false,
-        "name": "Ops Monitor",
-        "agentDir": "./workspace/agents/ops-monitor",
-        "model": {
-          "primary": "flash",
-          "fallbacks": ["sonnet", "codex", "haiku"]
-        },
-        "skills": []
-      },
-      {
-        "id": "demo-controller",
-        "default": false,
-        "name": "Demo Controller",
-        "agentDir": "./workspace/agents/demo-controller",
-        "model": {
-          "primary": "sonnet",
-          "fallbacks": ["codex", "haiku"]
-        },
-        "skills": []
-      },
-      {
-        "id": "jira-resolver",
-        "default": false,
-        "name": "Jira Ticket Resolver",
-        "agentDir": "./workspace/agents/jira-resolver",
-        "model": {
-          "primary": "sonnet",
-          "fallbacks": ["codex", "haiku"]
-        },
-        "skills": []
-      }
-    ]
-  },
+  "agents": { "$include": "./config/agents.json5" },
   "tools": {
     "web": {
       "search": {
         "enabled": true,
-        "apiKey": "<YOUR_SEARCH_API_KEY>"
+        "apiKey": "${SERPER_API_KEY}"
       },
       "fetch": {
         "enabled": true
       }
     }
   },
-  "bindings": [
-    {
-      "agentId": "ops-monitor",
-      "match": {
-        "channel": "discord",
-        "guildId": "<YOUR_DISCORD_GUILD_ID>"
-      }
-    },
-    {
-      "agentId": "demo-controller",
-      "match": {
-        "channel": "discord",
-        "guildId": "<YOUR_DISCORD_GUILD_ID>"
-      }
-    }
-  ],
+  "bindings": { "$include": "./config/bindings.json5" },
   "messages": {
     "queue": {
       "mode": "collect",
@@ -182,31 +91,14 @@
       }
     }
   },
-  "channels": {
-    "discord": {
-      "enabled": true,
-      "token": "<YOUR_DISCORD_BOT_TOKEN>",
-      "groupPolicy": "allowlist",
-      "guilds": {
-        "<GUILD_ID_1>": {},
-        "<GUILD_ID_2>": {}
-      }
-    },
-    "imessage": {
-      "enabled": true,
-      "cliPath": "imsg",
-      "dmPolicy": "pairing",
-      "groupAllowFrom": ["<YOUR_PHONE_NUMBER>"],
-      "groupPolicy": "allowlist"
-    }
-  },
+  "channels": { "$include": "./config/channels.json5" },
   "gateway": {
     "port": 18789,
     "mode": "local",
     "bind": "loopback",
     "auth": {
       "mode": "token",
-      "token": "<YOUR_GATEWAY_TOKEN>"
+      "token": "${GATEWAY_AUTH_TOKEN}"
     },
     "tailscale": {
       "mode": "off",
@@ -216,6 +108,10 @@
   "skills": {
     "install": {
       "nodeManager": "bun"
+    },
+    "entries": {
+      "nano-banana-pro": { "apiKey": "no" },
+      "notion": { "apiKey": "no" }
     }
   },
   "plugins": {

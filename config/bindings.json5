@@ -1,0 +1,32 @@
+// OpenClaw Agent-Channel Bindings
+// Routes inbound messages to the correct agent
+[
+  {
+    "agentId": "ops-monitor",
+    "match": {
+      "channel": "discord",
+      "guildId": "${DISCORD_SERVER_ID_OPS}"
+    }
+  },
+  {
+    "agentId": "ops-monitor",
+    "match": {
+      "channel": "discord",
+      "guildId": "${DISCORD_SERVER_ID_DEV}"
+    }
+  },
+  {
+    "agentId": "demo-controller",
+    "match": {
+      "channel": "discord",
+      "guildId": "${DISCORD_SERVER_ID_OPS}"
+    }
+  },
+  {
+    "agentId": "demo-controller",
+    "match": {
+      "channel": "discord",
+      "guildId": "${DISCORD_SERVER_ID_DEV}"
+    }
+  }
+]

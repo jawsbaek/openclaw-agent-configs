@@ -1,0 +1,55 @@
+// OTel Demo Project - Service Definitions
+// Used by ops-monitor and jira-resolver
+{
+  "docker": {
+    "compose_project": "/path/to/docker-compose-project",
+    "services": [
+      { "name": "frontend", "container_pattern": "frontend", "restart_allowed": true, "scale_allowed": false },
+      { "name": "frontend-proxy", "container_pattern": "frontend-proxy", "restart_allowed": true, "scale_allowed": false },
+      { "name": "checkout", "container_pattern": "checkoutservice", "restart_allowed": true, "scale_allowed": true },
+      { "name": "payment", "container_pattern": "paymentservice", "restart_allowed": true, "scale_allowed": true },
+      { "name": "currency", "container_pattern": "currencyservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "cart", "container_pattern": "cartservice", "restart_allowed": true, "scale_allowed": true },
+      { "name": "product-catalog", "container_pattern": "productcatalogservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "recommendation", "container_pattern": "recommendationservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "shipping", "container_pattern": "shippingservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "email", "container_pattern": "emailservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "ad", "container_pattern": "adservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "quote", "container_pattern": "quoteservice", "restart_allowed": true, "scale_allowed": false },
+      { "name": "load-generator", "container_pattern": "loadgenerator", "restart_allowed": true, "scale_allowed": false },
+      { "name": "flagd", "container_pattern": "flagd", "restart_allowed": true, "scale_allowed": false }
+    ],
+    "blacklist_containers": ["signoz", "postgres", "redis"]
+  },
+  "discovery": {
+    "enabled": true,
+    "source": "signoz",
+    "refresh_interval_minutes": 5,
+    "cache_file": "memory/discovered-services.json"
+  },
+  "filters": {
+    "include": ["*"],
+    "exclude": ["otel-collector", "jaeger*", "prometheus*"]
+  },
+  "priority_rules": [
+    { "pattern": "checkout|payment", "priority": "critical", "error_rate_threshold": 3 },
+    { "pattern": "frontend|frontend-proxy", "priority": "high", "error_rate_threshold": 5 },
+    { "pattern": "product-catalog|cart|recommendation", "priority": "high", "error_rate_threshold": 5 },
+    { "pattern": "load-generator", "priority": "low", "enabled": false },
+    { "pattern": "*", "priority": "medium", "error_rate_threshold": 5 }
+  ],
+  "overrides": {
+    "checkout": { "display_name": "Checkout Service", "thresholds": { "error_rate_percent": 3, "response_time_p95_ms": 1500 } },
+    "payment": { "display_name": "Payment Service", "thresholds": { "error_rate_percent": 1, "response_time_p95_ms": 1000 } },
+    "frontend": { "display_name": "Frontend Web" },
+    "frontend-proxy": { "display_name": "Frontend Proxy" }
+  },
+  "dependencies": {
+    "frontend": ["frontend-proxy"],
+    "frontend-proxy": ["checkout", "cart", "product-catalog", "recommendation", "ad", "shipping", "currency"],
+    "checkout": ["payment", "shipping", "currency", "cart", "product-catalog", "email"],
+    "payment": ["currency"],
+    "recommendation": ["product-catalog"],
+    "cart": ["redis"]
+  }
+}

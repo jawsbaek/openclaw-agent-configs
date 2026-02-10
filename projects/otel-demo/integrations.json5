@@ -1,0 +1,35 @@
+// OTel Demo Project - Integration Settings
+// Shared by ops-monitor, demo-controller, jira-resolver
+{
+  "signoz": {
+    "url": "http://localhost:3301",
+    "api_key": "${SIGNOZ_API_KEY}",
+    "dashboard_base_url": "http://localhost:3301/dashboard"
+  },
+  "jira": {
+    "site": "${JIRA_SITE}",
+    "email": "${JIRA_EMAIL}",
+    "api_token": "${JIRA_API_TOKEN}",
+    "organization_id": "${JIRA_ORG_ID}",
+    "project_key": "${JIRA_PROJECT_KEY}",
+    "jql_base": "project=${JIRA_PROJECT_KEY} AND statusCategory != Done"
+  },
+  "discord": {
+    "server_id": "${DISCORD_SERVER_ID_OPS}",
+    "channels": {
+      "bug_reporting": "${DISCORD_BUG_CHANNEL}",
+      "day_review": "${DISCORD_REVIEW_CHANNEL}"
+    }
+  },
+  "otel_demo": {
+    "deployment_type": "docker-compose",
+    "compose_file": "/path/to/docker-compose.yml",
+    "load_generator_service": "loadgenerator",
+    "frontend_url": "http://localhost:8080",
+    "locust_url": "http://localhost:65215",
+    "flagd": {
+      "grpc_url": "localhost:65157",
+      "http_url": "http://localhost:65156"
+    }
+  }
+}

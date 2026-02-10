@@ -1,0 +1,94 @@
+// OTel Demo Project - Demo Controller Scenarios
+// Load testing scenarios tuned for the OTel Demo environment
+{
+  "scenarios": {
+    "normal": {
+      "name": "Normal Traffic",
+      "description": "정상 트래픽 (낮은 부하)",
+      "users": 5, "spawn_rate": 1, "duration_minutes": 10,
+      "error_rate_target": 0.01,
+      "expected_ops_monitor_response": "none"
+    },
+    "moderate": {
+      "name": "Moderate Traffic",
+      "description": "보통 트래픽 (중간 부하)",
+      "users": 20, "spawn_rate": 2, "duration_minutes": 10,
+      "error_rate_target": 0.02,
+      "expected_ops_monitor_response": "none"
+    },
+    "high": {
+      "name": "High Traffic",
+      "description": "높은 트래픽 (부하 증가)",
+      "users": 50, "spawn_rate": 5, "duration_minutes": 10,
+      "error_rate_target": 0.05,
+      "expected_ops_monitor_response": "warning"
+    },
+    "stress": {
+      "name": "Stress Test",
+      "description": "스트레스 테스트 (임계값 초과)",
+      "users": 100, "spawn_rate": 10, "duration_minutes": 5,
+      "error_rate_target": 0.1,
+      "expected_ops_monitor_response": "critical_with_jira"
+    },
+    "spike": {
+      "name": "Traffic Spike",
+      "description": "트래픽 급증 (순간 부하)",
+      "users": 80, "spawn_rate": 20, "duration_minutes": 3,
+      "error_rate_target": 0.08,
+      "expected_ops_monitor_response": "warning"
+    },
+    "recovery": {
+      "name": "Recovery",
+      "description": "복구 시나리오 (부하 감소)",
+      "users": 2, "spawn_rate": 1, "duration_minutes": 5,
+      "error_rate_target": 0.001,
+      "expected_ops_monitor_response": "auto_resolve"
+    },
+    "flagd_normal": {
+      "name": "FlagD Normal Load",
+      "description": "flagd 정상 부하 (초당 10 요청)",
+      "flagd_rps": 10, "duration_minutes": 10,
+      "flag_queries": ["productCatalogFailure", "recommendationCache", "adServiceFailure"],
+      "expected_ops_monitor_response": "none"
+    },
+    "flagd_high": {
+      "name": "FlagD High Load",
+      "description": "flagd 높은 부하 (초당 100 요청)",
+      "flagd_rps": 100, "duration_minutes": 10,
+      "flag_queries": ["productCatalogFailure", "recommendationCache", "adServiceFailure", "cartServiceFailure"],
+      "expected_ops_monitor_response": "warning"
+    },
+    "flagd_stress": {
+      "name": "FlagD Stress Test",
+      "description": "flagd 스트레스 테스트 (초당 500 요청)",
+      "flagd_rps": 500, "duration_minutes": 5,
+      "flag_queries": ["productCatalogFailure", "recommendationCache", "adServiceFailure", "cartServiceFailure", "checkoutServiceFailure"],
+      "expected_ops_monitor_response": "critical_with_jira"
+    }
+  },
+  "schedules": {
+    "daily_pattern": {
+      "enabled": true,
+      "description": "일일 부하 패턴 (자동 순환)",
+      "sequence": [
+        { "scenario": "normal", "start_time": "00:00" },
+        { "scenario": "moderate", "start_time": "09:00" },
+        { "scenario": "high", "start_time": "12:00" },
+        { "scenario": "moderate", "start_time": "15:00" },
+        { "scenario": "normal", "start_time": "18:00" },
+        { "scenario": "recovery", "start_time": "22:00" }
+      ]
+    },
+    "stress_test": {
+      "enabled": false,
+      "description": "스트레스 테스트 시나리오 (ops-monitor 검증용)",
+      "sequence": [
+        { "scenario": "normal", "duration_minutes": 5 },
+        { "scenario": "high", "duration_minutes": 10 },
+        { "scenario": "stress", "duration_minutes": 5 },
+        { "scenario": "spike", "duration_minutes": 3 },
+        { "scenario": "recovery", "duration_minutes": 5 }
+      ]
+    }
+  }
+}

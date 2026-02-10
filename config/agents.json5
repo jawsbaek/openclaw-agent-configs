@@ -1,0 +1,81 @@
+// OpenClaw Agent Configuration
+// Separated from openclaw.json for modularity
+{
+  "defaults": {
+    "model": {
+      "primary": "google-antigravity/gemini-3-flash",
+      "fallbacks": [
+        "openai-codex/gpt-5.3-codex"
+      ]
+    },
+    "imageModel": {
+      "primary": "google-antigravity/gemini-3-pro-image",
+      "fallbacks": []
+    },
+    "models": {
+      "anthropic/claude-opus-4-5": { "alias": "opus45" },
+      "anthropic/claude-sonnet-4-5": { "alias": "sonnet" },
+      "anthropic/claude-opus-4-6": { "alias": "opus" },
+      "openai-codex/gpt-5.3-codex": { "alias": "codex" },
+      "anthropic/claude-3-5-haiku": { "alias": "haiku" },
+      "google-antigravity/gemini-3-flash": { "alias": "flash" },
+      "google-antigravity/gemini-3-pro-image": { "alias": "gemini-image" },
+      "openai-codex/gpt-5.3-mini": { "alias": "codex-mini" }
+    },
+    "workspace": "/path/to/openclaw/workspace",
+    "contextPruning": {
+      "mode": "cache-ttl",
+      "ttl": "6h",
+      "keepLastAssistants": 3
+    },
+    "timeoutSeconds": 600,
+    "heartbeat": {
+      "model": "flash"
+    },
+    "maxConcurrent": 4,
+    "subagents": {
+      "maxConcurrent": 8
+    }
+  },
+  "list": [
+    {
+      "id": "main",
+      "default": true,
+      "name": "Main",
+      "workspace": "/path/to/openclaw/workspace-main"
+    },
+    {
+      "id": "ops-monitor",
+      "default": false,
+      "name": "Ops Monitor",
+      "agentDir": "/path/to/openclaw/workspace/agents/ops-monitor",
+      "model": {
+        "primary": "flash",
+        "fallbacks": ["sonnet", "codex", "haiku"]
+      },
+      "skills": []
+    },
+    {
+      "id": "demo-controller",
+      "default": false,
+      "name": "Demo Controller",
+      "agentDir": "/path/to/openclaw/workspace/agents/demo-controller",
+      "model": {
+        "primary": "sonnet",
+        "fallbacks": ["codex", "haiku"]
+      },
+      "skills": []
+    },
+    {
+      "id": "jira-resolver",
+      "default": false,
+      "name": "Jira Ticket Resolver",
+      "agentDir": "/path/to/openclaw/workspace/agents/jira-resolver",
+      "model": {
+        "primary": "sonnet",
+        "fallbacks": ["codex", "haiku"]
+      },
+      "skills": []
+    }
+  ]
+}
